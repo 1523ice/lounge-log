@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="国内34空港のラウンジを空港ごとに一覧し、行ったラウンジをマークして制覇率を記録できます。">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>ラウンジ訪問記録</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+  /* Layout: departure-board header over a stack of collapsible airport panels.
+     Palette: night-apron navy, amber cabin light, type-coded tag hues. */
+  :root {
+    --bg: #eef1f5;
+    --surface: #ffffff;
+    --surface-2: #f4f6f9;
+    --fg: #1a2230;
+    --muted: #5d6a7d;
+    --faint: #8a95a6;
+    --line: #d9dfe8;
+    --accent: #8a6d2b;        /* UI accent: シャンパンゴールド */
+    --f-tag: #c8102e;         /* 航空会社 F: JAL red 寄り */
+    --c-tag: #1d4e9e;         /* 航空会社 C: ANA トリトンブルー寄り */
+    --card-tag: #8a8f96;      /* カードラウンジ: 枠線だけの地味なグレー */
+    --card-line: #c4c8ce;
+    --pp-tag: #4a5c72;        /* Priority Pass: クールプラチナ */
+    --pp-bg: #e4e9ef;
+    --pp-line: #c3cdd8;
+    --pp-bar: #9aa8b8;
+    --jl: #cc0000;            /* 帯: JAL 鶴丸レッド */
+    --nh: #1a3c8c;            /* 帯: ANA トリトンブルー */
+    --nh-2: #00a3e0;          /* 帯: ANA モヒカンブルー */
+    --cx: #006564;            /* 帯: キャセイ ジェードグリーン */
+    --dl: #003366;            /* 帯: デルタ ネイビー */
+    --dl-red: #c8102e;        /* 帯: デルタ ウィジェットの赤 */
+    --ke: #0a7cc4;            /* 帯: 大韓航空 スカイブルー */
+    --ci: #c4467a;            /* 帯: チャイナエアライン 梅花のピンク */
+    --ua: #1b4fa8;            /* 帯: ユナイテッド ブルー */
+    --tk: #c70a0c;            /* 帯: ターキッシュ レッド */
+    --ek: #d71921;            /* 帯: エミレーツ レッド */
+    --board: #11202f;         /* signage panel */
+    --board-fg: #e9eef5;
+    --board-amber: #d9c38f;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0c1118;
+      --surface: #141c27;
+      --surface-2: #1b2531;
+      --fg: #e7ecf3;
+      --muted: #9aa7b8;
+      --faint: #6b7889;
+      --line: #273242;
+      --accent: #d9c38f;
+    --f-tag: #f0566a;
+    --c-tag: #6c9bea;
+      --card-tag: #7d848d;
+    --card-line: #3a424d;
+      --pp-tag: #d3dce6;
+    --pp-bg: #2a3440;
+    --pp-line: #4a5664;
+    --pp-bar: #a9b6c4;
+    --jl: #f04646;
+    --nh: #5b8be0;
+    --nh-2: #4cc6f2;
+    --cx: #2fa39e;
+    --dl: #5a86c2;
+    --dl-red: #f0566a;
+    --ke: #4fb0e6;
+    --ci: #ec86ab;
+    --ua: #6b9be6;
+    --tk: #f05050;
+    --ek: #f05a60;
+      --board: #0a131c;
+      --board-fg: #e9eef5;
+      --board-amber: #d9c38f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0c1118;
+    --surface: #141c27;
+    --surface-2: #1b2531;
+    --fg: #e7ecf3;
+    --muted: #9aa7b8;
+    --faint: #6b7889;
+    --line: #273242;
+    --accent: #d9c38f;
+    --f-tag: #f0566a;
+    --c-tag: #6c9bea;
+    --card-tag: #7d848d;
+    --card-line: #3a424d;
+    --pp-tag: #d3dce6;
+    --pp-bg: #2a3440;
+    --pp-line: #4a5664;
+    --pp-bar: #a9b6c4;
+    --jl: #f04646;
+    --nh: #5b8be0;
+    --nh-2: #4cc6f2;
+    --cx: #2fa39e;
+    --dl: #5a86c2;
+    --dl-red: #f0566a;
+    --ke: #4fb0e6;
+    --ci: #ec86ab;
+    --ua: #6b9be6;
+    --tk: #f05050;
+    --ek: #f05a60;
+    --board: #0a131c;
+    --board-fg: #e9eef5;
+    --board-amber: #d9c38f;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Zen Kaku Gothic New", system-ui, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0 56px;
+  }
+
+  /* ---- Header board ---- */
+  header.board {
+    background: var(--board);
+    color: var(--board-fg);
+    border-radius: 0 0 14px 14px;
+    padding: 22px 20px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px -18px rgba(0,0,0,.6);
+  }
+  .board-top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .board h1 {
+    font-family: "Oswald", sans-serif;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    font-size: clamp(1.5rem, 5vw, 2.1rem);
+    margin: 0;
+    line-height: 1.05;
+  }
+  .board h1 .amber { color: var(--board-amber); }
+  .board .sub {
+    font-size: .82rem;
+    color: #aab6c6;
+    letter-spacing: .02em;
+  }
+  .dummy-flag {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 12px;
+    font-size: .74rem; font-weight: 500;
+    color: #0a131c; background: var(--board-amber);
+    padding: 4px 10px; border-radius: 999px;
+    letter-spacing: .04em;
+  }
+
+  /* ---- Stats strip ---- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    margin-top: 16px;
+    background: rgba(255,255,255,.08);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .stat { background: rgba(255,255,255,.03); padding: 10px 8px; text-align: center; }
+  .stat .n {
+    font-family: "Oswald", sans-serif; font-weight: 600;
+    font-size: 1.5rem; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .l { font-size: .68rem; color: #aab6c6; margin-top: 3px; letter-spacing: .03em; }
+  @media (max-width: 460px) {
+    .stat { padding: 9px 4px; }
+    .stat .n { font-size: 1.25rem; }
+    .stat .l { font-size: .6rem; }
+  }
+
+  /* ---- Controls ---- */
+  .controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+  .search {
+    width: 100%; padding: 11px 14px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--surface); color: var(--fg);
+    font: inherit; font-size: .95rem;
+  }
+  .search::placeholder { color: var(--faint); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--surface);
+    color: var(--muted); font: inherit; font-size: .82rem; font-weight: 500;
+    padding: 6px 13px; border-radius: 999px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .chip .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .chip[aria-pressed="true"] { color: var(--fg); border-color: currentColor; background: var(--surface-2); }
+
+  /* ---- Airport panels ---- */
+  .airport { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 12px; overflow: hidden; }
+  .airport > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+  }
+  .airport > summary::-webkit-details-marker { display: none; }
+  .iata {
+    font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .05em;
+    font-size: 1.2rem; color: var(--accent);
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 3px 9px; min-width: 56px; text-align: center;
+  }
+  .ap-name { flex: 1; min-width: 0; }
+  .ap-name .jp { font-weight: 700; font-size: 1rem; }
+  .ap-name .en { font-size: .74rem; color: var(--faint); letter-spacing: .03em; }
+  .ap-count { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .caret { color: var(--faint); transition: transform .2s; flex-shrink: 0; }
+  details[open] > summary .caret { transform: rotate(90deg); }
+
+  .terminals { padding: 0 16px 8px; }
+  .terminal { border-top: 1px solid var(--line); padding: 12px 0 4px; }
+  .terminal:first-child { border-top: none; }
+  .term-label {
+    font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .term-label .seg {
+    font-family: "Oswald", sans-serif; font-weight: 500; font-size: .7rem;
+    padding: 1px 7px; border-radius: 4px; letter-spacing: .05em;
+  }
+  .seg.dom { background: var(--surface-2); color: var(--fg); border: 1px solid var(--line); }
+  .seg.intl { background: var(--fg); color: var(--surface); border: 1px solid var(--fg); }
+  .seg.other { background: transparent; color: var(--muted); border: 1px dashed var(--line); }
+
+  .lounge {
+    display: flex; align-items: center; gap: 11px;
+    padding: 9px 10px; border-radius: 9px;
+  }
+  .lounge:hover { background: var(--surface-2); }
+  .lounge .bar { width: 3px; align-self: stretch; border-radius: 3px; min-height: 30px; }
+  .bar.t-f { background: var(--f-tag); }
+  .bar.t-c { background: var(--c-tag); }
+  .bar.t-card { width: 2px; background: var(--card-line); }
+  .bar.t-pp { background: var(--pp-bar); }
+  .bar.b-jl { background: var(--jl); }
+  .bar.b-nh { background: linear-gradient(to bottom, var(--nh) 50%, var(--nh-2) 50%); }
+  .bar.b-cx { background: var(--cx); }
+  .bar.b-dl { background: linear-gradient(to bottom, var(--dl-red) 50%, var(--dl) 50%); }
+  .bar.b-ke { background: var(--ke); }
+  .bar.b-ci { background: var(--ci); }
+  .bar.b-ua { background: var(--ua); }
+  .bar.b-tk { background: var(--tk); }
+  .bar.b-ek { background: var(--ek); }
+  .bar.b-jlnh { background: linear-gradient(to bottom, var(--jl) 50%, var(--nh) 50%); }
+  .lounge .ln-main { flex: 1; min-width: 0; }
+  .lounge .ln-name { font-size: .93rem; font-weight: 500; }
+  .lounge .ln-op { font-size: .74rem; color: var(--faint); }
+  .tag {
+    font-size: .68rem; font-weight: 700; letter-spacing: .03em;
+    padding: 3px 9px; border-radius: 6px; white-space: nowrap;
+  }
+  .tag.t-f { background: color-mix(in srgb, var(--f-tag) 16%, transparent); color: var(--f-tag); }
+  .tag.t-c { background: color-mix(in srgb, var(--c-tag) 16%, transparent); color: var(--c-tag); }
+  .tag.t-card { background: transparent; color: var(--card-tag); border: 1px solid var(--card-line); font-weight: 500; }
+  .tag.t-pp { background: var(--pp-bg); color: var(--pp-tag); border: 1px solid var(--pp-line); }
+
+  .status {
+    display: inline-block; margin-top: 3px;
+    font-size: .68rem; font-weight: 700; letter-spacing: .02em;
+    color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px dashed var(--accent);
+    padding: 1px 7px; border-radius: 5px;
+  }
+  .lounge.closed .ln-name { color: var(--muted); }
+
+  /* ---- 制覇率 ---- */
+  .progress { margin-top: 16px; }
+  .pg-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .pg-label { font-size: .72rem; color: #aab6c6; letter-spacing: .08em; margin-right: 8px; }
+  .pg-pct {
+    font-family: "Oswald", sans-serif; font-weight: 600; font-size: 2.2rem; line-height: 1;
+    color: var(--board-amber); font-variant-numeric: tabular-nums;
+  }
+  .pg-pct small { font-size: 1rem; margin-left: 2px; }
+  .pg-cnt { font-size: .82rem; color: #aab6c6; font-variant-numeric: tabular-nums; }
+  .pg-bar { margin-top: 8px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+  .pg-bar span { display: block; height: 100%; background: var(--board-amber); border-radius: 3px; transition: width .3s; }
+  .stat .n small { font-size: .78rem; font-weight: 500; color: #aab6c6; margin-left: 1px; }
+
+  /* ---- 訪問チェック ---- */
+  .visit {
+    width: 26px; height: 26px; flex-shrink: 0; padding: 0;
+    border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface);
+    color: transparent; cursor: pointer; display: grid; place-items: center;
+    transition: background .15s, border-color .15s;
+  }
+  .visit:hover { border-color: var(--muted); color: var(--line); }
+  .visit[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--surface); }
+  .visit:focus-visible, .chip:focus-visible, .st-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .elig {
+    display: inline-block; margin-top: 3px;
+    font-size: .66rem; font-weight: 700; letter-spacing: .02em;
+    color: var(--fg); background: var(--surface-2); border: 1px solid var(--line);
+    padding: 1px 7px; border-radius: 5px;
+  }
+
+  /* ---- ステータス登録 ---- */
+  .status-panel { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .status-panel > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; font-weight: 700; font-size: .9rem;
+  }
+  .status-panel > summary::-webkit-details-marker { display: none; }
+  .st-sum { flex: 1; min-width: 0; font-weight: 500; font-size: .78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st-groups { padding: 0 16px 4px; display: grid; gap: 12px; }
+  .st-group-name { font-size: .72rem; font-weight: 700; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+  .st-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .st-btn {
+    border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+    font: inherit; font-size: .8rem; border-radius: 8px; padding: 5px 10px; cursor: pointer;
+    display: inline-flex; align-items: baseline; gap: 6px;
+  }
+  .st-btn[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--surface); }
+  /* 航空会社ステータスから自動で付いたアライアンス資格（見た目は押した状態と同じ） */
+  .st-btn.implied { cursor: default; }
+  .st-note { margin: 8px 16px 14px; font-size: .74rem; color: var(--faint); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  .empty { text-align: center; color: var(--faint); padding: 40px 10px; font-size: .9rem; }
+  footer { margin-top: 26px; text-align: center; color: var(--faint); font-size: .76rem; line-height: 1.7; }
+
+  /* theme toggle */
+  .theme-btn {
+    position: absolute; top: 14px; right: max(14px, env(safe-area-inset-right, 0px));
+    background: rgba(255,255,255,.1); color: var(--board-fg);
+    border: 1px solid rgba(255,255,255,.18); border-radius: 8px;
+    width: 34px; height: 34px; cursor: pointer; font-size: 1rem;
+  }
+  header.board { position: relative; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="board">
+    <button class="theme-btn" id="themeBtn" aria-label="テーマ切替">◐</button>
+    <div class="board-top">
+      <h1>ラウンジ<span class="amber">訪問記録</span></h1>
+      <span class="sub">AIRPORT LOUNGE PASSPORT</span>
+    </div>
+    <div class="dummy-flag">国内34空港</div>
+    <div class="progress">
+      <div class="pg-top">
+        <span><span class="pg-label">制覇率</span><span class="pg-pct" id="pgPct">0<small>%</small></span></span>
+        <span class="pg-cnt" id="pgCnt"></span>
+      </div>
+      <div class="pg-bar"><span id="pgBar" style="width:0%"></span></div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div class="controls">
+    <input class="search" id="search" type="search" placeholder="空港名・コード・ラウンジ名で検索（例: 羽田, HND）" autocomplete="off">
+    <div class="chips" id="filters">
+      <button class="chip" data-filter="unvisited" aria-pressed="false">未訪問</button>
+      <button class="chip" data-filter="eligible" aria-pressed="false">入室資格あり</button>
+    </div>
+    <details class="status-panel" id="statusPanel">
+      <summary>
+        <span>持っているステータス</span>
+        <span class="st-sum" id="statusSummary">未登録</span>
+        <svg class="caret" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </summary>
+      <div class="st-groups" id="statusGroups"></div>
+      <p class="st-note">登録すると、入れるラウンジに「入室資格あり」を表示します。各社公式の基準をもとにした目安で、実際は搭乗便やクラスの条件があります。</p>
+    </details>
+  </div>
+
+  <div id="list"></div>
+
+  <footer>
+    国内空港のラウンジを航空会社 / カード / Priority Passまで収録予定（国際線も対象）。<br>
+    航空会社 F＝ファーストクラス相当、航空会社 C＝ビジネスクラス相当。<br>
+    左の丸で訪問済みをマーク。記録とステータスはあなただけが見られる場所に保存されます。<br>
+    各空港・航空会社・カード会社・Priority Pass の公式案内（2026年10月時点）をもとに収録。
+  </footer>
+</div>
+
+<script>
+  // ---- データ: 空港 > ターミナル(国内線/国際線/その他) > ラウンジ(種別) ----
+  // type: f=航空会社 ファーストクラス相当 / c=航空会社 ビジネスクラス相当 / card=カードラウンジ / pp=Priority Pass
+  const TYPE_LABEL = { f: "航空会社 F", c: "航空会社 C", card: "カードラウンジ", pp: "Priority Pass" };
+  // ラウンジ名の下に出す運営会社・アライアンス表記
+  // bar: 帯をその航空会社のコーポレートカラーにする（--jl などのトークン）
+  // access: そのラウンジ種別(f/c)に入れるステータス。JAL/ANAの各ステータスは IMPLY でアライアンス資格に展開して判定する
+  const BRAND = {
+    JL: { label: "JAL ・ oneworld", bar: "jl", access: { f: ["ow_emerald"], c: ["ow_sapphire", "ow_emerald"] } },
+    NH: { label: "ANA ・ Star Alliance", bar: "nh", access: { f: ["nh_dia"], c: ["sa_gold"] } },
+    CX: { label: "Cathay Pacific ・ oneworld", bar: "cx", access: { c: ["ow_sapphire", "ow_emerald"] } },
+    DL: { label: "Delta ・ SkyTeam", bar: "dl", access: { c: ["st_elite_plus"] } },
+    KE: { label: "Korean Air ・ SkyTeam", bar: "ke", access: { c: ["st_elite_plus"] } },
+    CI: { label: "China Airlines ・ SkyTeam", bar: "ci", access: { c: ["st_elite_plus"] } },
+    UA: { label: "United ・ Star Alliance", bar: "ua", access: { c: ["sa_gold"] } },
+    TK: { label: "Turkish Airlines ・ Star Alliance", bar: "tk", access: { c: ["sa_gold"] } },
+    EK: { label: "Emirates", bar: "ek", access: {} },
+    // JAL・ANAが共同で使うラウンジ（入室条件は両社の航空会社ラウンジと同じ）
+    JLNH: { label: "JAL・ANA 共用", bar: "jlnh", access: { c: ["ow_sapphire", "ow_emerald", "sa_gold"] } },
+    // 空港会社などが運営し、契約した航空会社の利用客が入るラウンジ
+    SHARED: { label: "航空会社共用", access: {} },
+  };
+
+  // [key, 名称]
+  const STATUS_GROUPS = [
+    { name: "JAL", items: [["jl_cry", "クリスタル"], ["jl_jgc", "JGC"], ["jl_sph", "サファイア"], ["jl_jgp", "JGCプレミア"], ["jl_dia", "ダイヤモンド"]] },
+    { name: "ANA", items: [["nh_brz", "ブロンズ"], ["nh_sfc", "SFC"], ["nh_plt", "プラチナ"], ["nh_dia", "ダイヤモンド"]] },
+    { name: "oneworld", items: [["ow_ruby", "ルビー"], ["ow_sapphire", "サファイア"], ["ow_emerald", "エメラルド"]] },
+    { name: "Star Alliance", items: [["sa_silver", "シルバー"], ["sa_gold", "ゴールド"]] },
+    { name: "SkyTeam", items: [["st_elite", "エリート"], ["st_elite_plus", "エリートプラス"]] },
+    { name: "カード", items: [["gold_card", "ゴールドカード"], ["pp", "プライオリティ・パス"]] },
+  ];
+  const STATUS_KEYS = new Set(STATUS_GROUPS.flatMap(g => g.items.map(i => i[0])));
+  // 航空会社ステータス → 同等のアライアンス資格
+  const IMPLY = {
+    jl_cry: ["ow_ruby"], jl_sph: ["ow_sapphire"], jl_jgc: ["ow_sapphire"], jl_dia: ["ow_emerald"], jl_jgp: ["ow_emerald"],
+    nh_brz: ["sa_silver"], nh_plt: ["sa_gold"], nh_dia: ["sa_gold"], nh_sfc: ["sa_gold"],
+  };
+  const brandLabel = l => (typeof l.brand === "object" ? l.brand.label : l.brand) || "";
+  const barClass = l => (typeof l.brand === "object" && l.brand.bar) ? `b-${l.brand.bar}` : `t-${l.type}`;
+  // 2026年10月時点。各空港・JAL・ANA・カード会社(三井住友カード/JCB)・Priority Pass の公式案内より
+  // gold: ゴールドカードで入れる / pp: プライオリティ・パスでも入れる / acc: そのほかに入れるステータス
+  const DATA = [
+    { iata: "CTS", jp: "新千歳", en: "NEW CHITOSE", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ダイヤモンド・プレミアラウンジ", brand: BRAND.JL, type: "f" },
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "ANA SUITE LOUNGE", brand: BRAND.NH, type: "f" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "スーパーラウンジ", type: "card", gold: true },
+        { name: "スーパーラウンジ アネックス", type: "card", gold: true },
+      ]},
+      { seg: "intl", label: "国際線", lounges: [
+        { name: "ロイヤルラウンジ", brand: BRAND.SHARED, type: "c" },
+        { name: "カフェスカイライブラリー", type: "pp" },
+      ]},
+    ]},
+    { iata: "AKJ", jp: "旭川", en: "ASAHIKAWA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "LOUNGE 大雪", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "HKD", jp: "函館", en: "HAKODATE", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ビジネスラウンジ A Spring.", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "AOJ", jp: "青森", en: "AOMORI", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "エアポートラウンジ", type: "card", gold: true, pp: true, acc: ["ow_sapphire", "ow_emerald"] },
+      ]},
+    ]},
+    { iata: "AXT", jp: "秋田", en: "AKITA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ROYALSKY LOUNGE", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "SDJ", jp: "仙台", en: "SENDAI", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "ビジネスラウンジ EAST SIDE", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "KIJ", jp: "新潟", en: "NIIGATA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "エアリウムラウンジ", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "NRT", jp: "成田", en: "NARITA", terminals: [
+      { seg: "intl", label: "第1ターミナル（国際線）", lounges: [
+        { name: "ANA SUITE LOUNGE", brand: BRAND.NH, type: "f" },
+        { name: "ANA LOUNGE（第5サテライト）", brand: BRAND.NH, type: "c" },
+        { name: "ANA LOUNGE（第2サテライト）", brand: BRAND.NH, type: "c" },
+        { name: "Korean Air ラウンジ", brand: BRAND.KE, type: "c" },
+        { name: "ユナイテッド・クラブ", brand: BRAND.UA, type: "c" },
+        { name: "ターキッシュ エアラインズ ラウンジ", brand: BRAND.TK, type: "c" },
+        { name: "NARITA PREMIER LOUNGE", brand: BRAND.SHARED, type: "c" },
+        { name: "IASS Superior Lounge 希和 -NOA-", type: "card", pp: true },
+        { name: "IASS Executive Lounge 1", type: "card", gold: true, pp: true },
+      ]},
+      { seg: "dom", label: "第1ターミナル（国内線）", lounges: [
+        { name: "ANA ARRIVAL LOUNGE", brand: BRAND.NH, type: "c" },
+      ]},
+      { seg: "intl", label: "第2ターミナル（国際線）", lounges: [
+        { name: "JALファーストクラスラウンジ", brand: BRAND.JL, type: "f" },
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "キャセイパシフィック・ラウンジ", brand: BRAND.CX, type: "c" },
+        { name: "ダイナスティ・ラウンジ", brand: BRAND.CI, type: "c" },
+        { name: "エミレーツ・ラウンジ", brand: BRAND.EK, type: "c" },
+        { name: "アスパイアラウンジ", brand: BRAND.SHARED, type: "c" },
+        { name: "IASS Superior Lounge 虚空 -KoCoo-", type: "card", pp: true },
+        { name: "IASS Executive Lounge 2", type: "card", gold: true, pp: true },
+      ]},
+      { seg: "dom", label: "第2ターミナル（国内線）", lounges: [
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+      ]},
+    ]},
+    { iata: "HND", jp: "羽田", en: "HANEDA", terminals: [
+      { seg: "dom", label: "第1ターミナル（国内線）", lounges: [
+        { name: "JALファーストクラスラウンジ（北）", brand: BRAND.JL, type: "f" },
+        { name: "サクララウンジ（北）", brand: BRAND.JL, type: "c" },
+        { name: "ダイヤモンド・プレミアラウンジ（南）", brand: BRAND.JL, type: "f" },
+        { name: "サクララウンジ（南）", brand: BRAND.JL, type: "c" },
+        { name: "POWER LOUNGE NORTH", type: "card", gold: true, pp: true },
+        { name: "POWER LOUNGE SOUTH", type: "card", gold: true, pp: true },
+        { name: "FOREST LOUNGE", type: "card", gold: true },
+        { name: "POWER LOUNGE CENTRAL", type: "card", gold: true, pp: true },
+      ]},
+      { seg: "dom", label: "第2ターミナル（国内線）", lounges: [
+        { name: "ANA SUITE LOUNGE", brand: BRAND.NH, type: "f" },
+        { name: "ANA LOUNGE（本館北）", brand: BRAND.NH, type: "c" },
+        { name: "ANA LOUNGE（本館南）", brand: BRAND.NH, type: "c" },
+        { name: "Lounge Us", type: "card", gold: true },
+        { name: "POWER LOUNGE NORTH", type: "card", gold: true, pp: true },
+        { name: "POWER LOUNGE CENTRAL", type: "card", gold: true, pp: true },
+      ]},
+      { seg: "intl", label: "第2ターミナル（国際線）", lounges: [
+        { name: "ANA SUITE LOUNGE", brand: BRAND.NH, type: "f" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "POWER LOUNGE PREMIUM", type: "card", pp: true },
+      ]},
+      { seg: "intl", label: "第3ターミナル（国際線）", lounges: [
+        { name: "JALファーストクラスラウンジ", brand: BRAND.JL, type: "f" },
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "サクララウンジ スカイビュー", brand: BRAND.JL, type: "c" },
+        { name: "ANA SUITE LOUNGE", brand: BRAND.NH, type: "f" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "キャセイパシフィック・ラウンジ", brand: BRAND.CX, type: "c" },
+        { name: "デルタ スカイクラブ", brand: BRAND.DL, type: "c" },
+        { name: "TIAT LOUNGE", type: "card", pp: true },
+        { name: "SKY LOUNGE", type: "card", gold: true },
+        { name: "センチュリオン・ラウンジ", brand: "American Express", type: "card" },
+        { name: "SKY LOUNGE SOUTH", type: "pp" },
+      ]},
+      { seg: "other", label: "羽田エアポートガーデン", lounges: [
+        { name: "エアポート カフェラウンジ NODOKA", type: "pp" },
+      ]},
+    ]},
+    { iata: "TOY", jp: "富山", en: "TOYAMA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ラウンジ らいちょう", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "KMQ", jp: "小松", en: "KOMATSU", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "スカイラウンジ白山", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "FSZ", jp: "静岡", en: "SHIZUOKA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "YOUR LOUNGE", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "NGO", jp: "中部", en: "CHUBU CENTRAIR", terminals: [
+      { seg: "intl", label: "国際線", lounges: [
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "Korean Air ラウンジ", brand: BRAND.KE, type: "c", pp: true },
+        { name: "ザ・コーラル・ファイネスト・ビジネスクラス・ラウンジ 鶯", brand: BRAND.SHARED, type: "c" },
+        { name: "ザ・コーラル・ファイネスト・ビジネスクラス・ラウンジ 楓", brand: BRAND.SHARED, type: "c" },
+        { name: "プラザ・プレミアム・ラウンジ", type: "pp" },
+      ]},
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "プラザ・プレミアム・ラウンジ名古屋（国内線出発）", brand: BRAND.JLNH, type: "c" },
+      ]},
+      { seg: "other", label: "出発ロビー（保安検査前）", lounges: [
+        { name: "プレミアムラウンジ セントレア", type: "card", gold: true },
+        { name: "第2プレミアムラウンジ セントレア", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "ITM", jp: "伊丹", en: "OSAKA ITAMI", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ダイヤモンド・プレミアラウンジ", brand: BRAND.JL, type: "f" },
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "ANA SUITE LOUNGE", brand: BRAND.NH, type: "f" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "ラウンジオーサカ", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "KIX", jp: "関西", en: "KANSAI", terminals: [
+      { seg: "intl", label: "第1ターミナル（国際線）", lounges: [
+        { name: "KIX Lounge Premium", brand: BRAND.SHARED, type: "f", acc: ["ow_sapphire", "ow_emerald", "nh_dia"] },
+        { name: "KIX Lounge KANSAI", brand: BRAND.SHARED, type: "c", acc: ["sa_gold"] },
+        { name: "NORTH LOUNGE", type: "card", gold: true },
+        { name: "SOUTH LOUNGE", type: "card" },
+      ]},
+      { seg: "dom", label: "第1ターミナル（国内線）", lounges: [
+        { name: "Lounge KANSAI", brand: BRAND.JLNH, type: "c" },
+      ]},
+      { seg: "other", label: "エアロプラザ", lounges: [
+        { name: "KIX エアポート カフェラウンジ NODOKA", type: "card", gold: true, pp: true },
+      ]},
+    ]},
+    { iata: "UKB", jp: "神戸", en: "KOBE", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ラウンジ神戸", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "OKJ", jp: "岡山", en: "OKAYAMA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "ラウンジ マスカット", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "HIJ", jp: "広島", en: "HIROSHIMA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "YAMANAMI VILLA", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "YGJ", jp: "米子", en: "YONAGO", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ラウンジ DAISEN", type: "card", gold: true, pp: true },
+      ]},
+    ]},
+    { iata: "IZO", jp: "出雲", en: "IZUMO", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "エアポートラウンジ", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "UBJ", jp: "山口宇部", en: "YAMAGUCHI UBE", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ラウンジ きらら", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "TKS", jp: "徳島", en: "TOKUSHIMA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "エアポートラウンジ ヴォルティス", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "TAK", jp: "高松", en: "TAKAMATSU", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ラウンジ 讃岐", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "MYJ", jp: "松山", en: "MATSUYAMA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "ビジネスラウンジ", type: "card", gold: true },
+        { name: "スカイラウンジ", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "KCZ", jp: "高知", en: "KOCHI", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ブルースカイラウンジ", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "FUK", jp: "福岡", en: "FUKUOKA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ダイヤモンド・プレミアラウンジ", brand: BRAND.JL, type: "f" },
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "ANA SUITE LOUNGE", brand: BRAND.NH, type: "f" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "ラウンジTIME／ノース", type: "card", gold: true },
+        { name: "ラウンジTIME／サウス", type: "card", gold: true },
+      ]},
+      { seg: "intl", label: "国際線", lounges: [
+        { name: "Korean Air ラウンジ", brand: BRAND.KE, type: "c", pp: true },
+        { name: "ラウンジ福岡", brand: BRAND.SHARED, type: "c", pp: true },
+        { name: "ラウンジTIMEインターナショナル", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "KKJ", jp: "北九州", en: "KITAKYUSHU", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ラウンジ ひまわり", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "HSG", jp: "佐賀", en: "SAGA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "Premium Lounge さがのがら。", type: "card", gold: true, pp: true },
+      ]},
+    ]},
+    { iata: "NGS", jp: "長崎", en: "NAGASAKI", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ビジネスラウンジ アザレア", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "OIT", jp: "大分", en: "OITA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ラウンジ くにさき", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "KMJ", jp: "熊本", en: "KUMAMOTO", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ラウンジASO", type: "card", gold: true, acc: ["ow_sapphire", "ow_emerald", "sa_gold"] },
+      ]},
+    ]},
+    { iata: "KMI", jp: "宮崎", en: "MIYAZAKI", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ラウンジ大淀", brand: BRAND.JLNH, type: "c" },
+        { name: "ブーゲンラウンジひなた", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "KOJ", jp: "鹿児島", en: "KAGOSHIMA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "スカイラウンジ菜の花", type: "card", gold: true },
+      ]},
+    ]},
+    { iata: "OKA", jp: "那覇", en: "NAHA", terminals: [
+      { seg: "dom", label: "国内線", lounges: [
+        { name: "ダイヤモンド・プレミアラウンジ", brand: BRAND.JL, type: "f" },
+        { name: "サクララウンジ", brand: BRAND.JL, type: "c" },
+        { name: "ANA SUITE LOUNGE", brand: BRAND.NH, type: "f" },
+        { name: "ANA LOUNGE", brand: BRAND.NH, type: "c" },
+        { name: "LOUNGE HANA", type: "card", gold: true },
+      ]},
+      { seg: "intl", label: "国際線", lounges: [
+        { name: "ラウンジ琉輪", brand: BRAND.SHARED, type: "c" },
+      ]},
+    ]},
+  ];
+
+  // 各ラウンジに保存用の一意なIDを振る（空港|ターミナル|名前）
+  const LOUNGES = [];
+  DATA.forEach(ap => ap.terminals.forEach(t => t.lounges.forEach(l => {
+    l.id = `${ap.iata}|${t.label}|${l.name}`;
+    l.iata = ap.iata;
+    LOUNGES.push(l);
+  })));
+
+  let query = "";
+  const filters = { unvisited: false, eligible: false };
+  const openAirports = new Set();
+
+  const listEl = document.getElementById("list");
+  const statsEl = document.getElementById("stats");
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const CHECK_SVG = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  // ---- 記録（訪問済み・ステータス） ----
+  // 保存先: アカウント（db の data/users/<id>/profile、本人だけが読める）。使えない時はこの端末の localStorage。
+  const LS_KEY = "lounge-keikenchi-v1";
+  let state = { visited: {}, statuses: [] };
+  let remoteRef = null;
+  let saveTimer = null;
+  let writing = null;
+  let migrated = false;
+
+  function normalize(s) {
+    const visited = {};
+    if (s && s.visited && typeof s.visited === "object") {
+      Object.keys(s.visited).forEach(k => { if (s.visited[k] === true) visited[k] = true; });
+    }
+    const statuses = s && Array.isArray(s.statuses) ? s.statuses.filter(k => STATUS_KEYS.has(k)) : [];
+    return { visited, statuses };
+  }
+  function readLocal() {
+    try { return normalize(JSON.parse(localStorage.getItem(LS_KEY) || "null")); } catch (_) { return normalize(null); }
+  }
+  function writeLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {}
+  }
+  function hasRecords(s) { return Object.keys(s.visited).length > 0 || s.statuses.length > 0; }
+
+  function commit() {
+    writeLocal();
+    renderAll();
+    if (!remoteRef) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flush, 500);
+  }
+
+  async function flush() {
+    saveTimer = null;
+    if (writing) await writing.catch(() => {});
+    if (!remoteRef) return;
+    const body = JSON.parse(JSON.stringify(state));
+    writing = remoteRef.set(body);
+    try {
+      await writing;
+    } catch (e) {
+      const code = e && e.code;
+      if (code === "unavailable") {
+        writing = null;
+        saveTimer = setTimeout(flush, 800 + Math.random() * 800);
+        return;
+      }
+      // 書き込めない閲覧者・権限変更などは端末保存に切り替える
+      remoteRef = null;
+    }
+    writing = null;
+  }
+
+  async function connectRemote() {
+    const c = window.claude;
+    if (!c || typeof c.use !== "function") return;
+    const [db, user] = await Promise.all([c.use("db"), c.use("user")]);
+    if (!db || !user) return;
+    const uid = await user.id();
+    if (!uid) return;
+    let ref;
+    try { ref = db.doc("data/users/" + uid + "/profile"); } catch (_) { return; }
+    remoteRef = ref;
+    ref.onSnapshot(snap => {
+      // 自分の未送信の変更があるあいだは、古いスナップショットで上書きしない
+      if (saveTimer || writing) return;
+      if (snap.exists) {
+        state = normalize(snap.data());
+        writeLocal();
+        renderAll();
+      } else if (!migrated && !snap.metadata.fromCache) {
+        // アカウント側がまだ空なら、この端末の記録を引き継ぐ
+        migrated = true;
+        if (hasRecords(state)) commit();
+      }
+    }, () => {
+      remoteRef = null;
+    });
+  }
+
+  // ---- 入室資格 ----
+  function heldSet() {
+    const s = new Set(state.statuses);
+    state.statuses.forEach(k => (IMPLY[k] || []).forEach(x => s.add(x)));
+    return s;
+  }
+  function accessFor(l) {
+    const keys = [];
+    if (typeof l.brand === "object" && l.brand.access) keys.push(...(l.brand.access[l.type] || []));
+    if (l.gold) keys.push("gold_card");
+    if (l.pp || l.type === "pp") keys.push("pp");
+    if (l.acc) keys.push(...l.acc);
+    return keys;
+  }
+  const isEligible = (l, held) => accessFor(l).some(k => held.has(k));
+
+  // ---- 描画 ----
+  function renderStats() {
+    const v = state.visited;
+    const total = LOUNGES.length;
+    const done = LOUNGES.filter(l => v[l.id]).length;
+    const pct = total ? Math.round(done / total * 100) : 0;
+    document.getElementById("pgPct").innerHTML = `${pct}<small>%</small>`;
+    document.getElementById("pgCnt").textContent = `訪問 ${done} / ${total} ラウンジ`;
+    document.getElementById("pgBar").style.width = `${total ? done / total * 100 : 0}%`;
+
+    const of = t => {
+      const ls = LOUNGES.filter(l => l.type === t);
+      return [ls.filter(l => v[l.id]).length, ls.length];
+    };
+    const apDone = DATA.filter(ap => LOUNGES.some(l => l.iata === ap.iata && v[l.id])).length;
+    const cells = [
+      { n: [apDone, DATA.length], l: "空港" },
+      { n: of("f"), l: "航空会社 F" },
+      { n: of("c"), l: "航空会社 C" },
+      { n: of("card"), l: "カード" },
+      { n: of("pp"), l: "PP" },
+    ];
+    statsEl.innerHTML = cells.map(c => `<div class="stat"><div class="n">${c.n[0]}<small>/${c.n[1]}</small></div><div class="l">${c.l}</div></div>`).join("");
+  }
+
+  function renderStatusPanel() {
+    const own = new Set(state.statuses);
+    // JAL/ANAのステータスから自動で付くアライアンス資格
+    const implied = new Set();
+    state.statuses.forEach(k => (IMPLY[k] || []).forEach(x => { if (!own.has(x)) implied.add(x); }));
+    document.getElementById("statusGroups").innerHTML = STATUS_GROUPS.map(g => `
+      <div>
+        <div class="st-group-name">${g.name}</div>
+        <div class="st-row">${g.items.map(([key, name]) => `
+          <button class="st-btn${implied.has(key) ? " implied" : ""}" data-key="${key}" aria-pressed="${own.has(key) || implied.has(key)}">${name}</button>`).join("")}
+        </div>
+      </div>`).join("");
+    const labels = [];
+    STATUS_GROUPS.forEach(g => g.items.forEach(([key, name]) => {
+      if (own.has(key) || implied.has(key)) labels.push(g.name === "カード" ? name : `${g.name} ${name}`);
+    }));
+    document.getElementById("statusSummary").textContent = labels.length ? labels.join(" ・ ") : "未登録";
+  }
+
+  function matchAirportName(ap, q) {
+    return ap.iata.toLowerCase().includes(q) || ap.jp.toLowerCase().includes(q) || ap.en.toLowerCase().includes(q);
+  }
+  function loungeVisible(ap, l, held) {
+    if (filters.unvisited && state.visited[l.id]) return false;
+    if (filters.eligible && !isEligible(l, held)) return false;
+    if (!query) return true;
+    const q = query.toLowerCase();
+    if (matchAirportName(ap, q)) return true;
+    return l.name.toLowerCase().includes(q) || brandLabel(l).toLowerCase().includes(q);
+  }
+
+  function render() {
+    const filtering = query !== "" || filters.unvisited || filters.eligible;
+    const held = heldSet();
+    let html = "";
+    let shown = 0;
+
+    DATA.forEach(ap => {
+      let termHtml = "";
+      let apCount = 0;
+      ap.terminals.forEach(t => {
+        const lounges = t.lounges.filter(l => loungeVisible(ap, l, held));
+        if (!lounges.length) return;
+        apCount += lounges.length;
+        termHtml += `<div class="terminal">
+          <div class="term-label"><span class="seg ${t.seg}">${{ dom: "国内", intl: "国際", other: "共通" }[t.seg]}</span>${t.label}</div>
+          ${lounges.map(l => {
+            const v = !!state.visited[l.id];
+            const el = held.size > 0 && isEligible(l, held);
+            return `
+            <div class="lounge${l.status ? " closed" : ""}">
+              <button class="visit" data-id="${esc(l.id)}" aria-pressed="${v}" aria-label="${esc(l.name)}を${v ? "未訪問に戻す" : "訪問済みにする"}">${CHECK_SVG}</button>
+              <span class="bar ${barClass(l)}"></span>
+              <div class="ln-main">
+                <div class="ln-name">${l.name}</div>
+                ${brandLabel(l) ? `<div class="ln-op">${brandLabel(l)}</div>` : ""}
+                ${l.status ? `<span class="status">${l.status}</span>` : ""}
+                ${el ? `<span class="elig">入室資格あり</span>` : ""}
+              </div>
+              <span class="tag t-${l.type}">${TYPE_LABEL[l.type]}</span>
+            </div>`;
+          }).join("")}
+        </div>`;
+      });
+
+      if (!apCount) return;
+      shown++;
+      const apAll = LOUNGES.filter(l => l.iata === ap.iata);
+      const apDone = apAll.filter(l => state.visited[l.id]).length;
+      html += `<details class="airport" data-iata="${ap.iata}" ${filtering || openAirports.has(ap.iata) ? "open" : ""}>
+        <summary>
+          <span class="iata">${ap.iata}</span>
+          <span class="ap-name"><span class="jp">${ap.jp}</span> <span class="en">${ap.en}</span></span>
+          <span class="ap-count">${apDone} / ${apAll.length}</span>
+          <svg class="caret" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="terminals">${termHtml}</div>
+      </details>`;
+    });
+
+    let empty = "該当するラウンジがありません";
+    if (filters.eligible && state.statuses.length === 0) empty = "上の「持っているステータス」を登録すると、入れるラウンジだけを表示できます";
+    listEl.innerHTML = shown ? html : `<div class="empty">${empty}</div>`;
+  }
+
+  function renderAll() {
+    renderStats();
+    renderStatusPanel();
+    render();
+  }
+
+  // ---- 操作 ----
+  listEl.addEventListener("click", e => {
+    const btn = e.target.closest(".visit");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (state.visited[id]) delete state.visited[id];
+    else state.visited[id] = true;
+    commit();
+  });
+  // 開いている空港を覚えておき、再描画しても閉じないようにする
+  listEl.addEventListener("toggle", e => {
+    const d = e.target;
+    if (!d.matches || !d.matches("details.airport")) return;
+    if (d.open) openAirports.add(d.dataset.iata);
+    else openAirports.delete(d.dataset.iata);
+  }, true);
+
+  document.getElementById("statusGroups").addEventListener("click", e => {
+    const btn = e.target.closest(".st-btn");
+    if (!btn) return;
+    const key = btn.dataset.key;
+    // 自動反映分は元の航空会社ステータスで決まるので、ここでは切り替えない
+    if (btn.classList.contains("implied")) return;
+    const s = new Set(state.statuses);
+    if (s.has(key)) s.delete(key); else s.add(key);
+    state.statuses = [...s];
+    commit();
+  });
+
+  document.getElementById("filters").addEventListener("click", e => {
+    const btn = e.target.closest(".chip");
+    if (!btn) return;
+    const k = btn.dataset.filter;
+    filters[k] = !filters[k];
+    btn.setAttribute("aria-pressed", String(filters[k]));
+    render();
+  });
+
+  document.getElementById("search").addEventListener("input", e => {
+    query = e.target.value.trim();
+    render();
+  });
+
+  // theme toggle (per-viewer convenience)
+  const root = document.documentElement;
+  const themeBtn = document.getElementById("themeBtn");
+  try {
+    const saved = localStorage.getItem("lounge-theme");
+    if (saved) root.setAttribute("data-theme", saved);
+  } catch (_) {}
+  themeBtn.addEventListener("click", () => {
+    const cur = root.getAttribute("data-theme");
+    const isDark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    const next = isDark ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("lounge-theme", next); } catch (_) {}
+  });
+
+  state = readLocal();
+  renderAll();
+  connectRemote();
+</script>
+</body>
+</html>
